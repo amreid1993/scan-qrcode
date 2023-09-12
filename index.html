@@ -4,96 +4,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-
-    <script type="text/javascript" src="https://unpkg.com/@zxing/library@latest"></script>   
-
-    <style>
-    /* Add CSS styles for the individual borders */
-    .qr-code-border {
-      position: absolute;
-      border: 2px solid red;
-      pointer-events: none;
-    }
+    <title>Document</title>   
   </style>
 </head>
 
 <body>
    <video id="video" autoplay></video>
-  <canvas id="canvas" style="display:none;"></canvas>
   <div id="results"></div>
 
-    <!-- <script src="https://cdn.rawgit.com/zxing-js/library/0.19.0/dist/browser-esm/zxing.js"></script> -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/instascan/2.0.1/instascan.min.js"></script>
   <script>
     const video = document.getElementById('video');
-    const canvas = document.getElementById('canvas');
     const resultsDiv = document.getElementById('results');
 
-    let selectedCamera = null; // Store the selected camera
+    const scanner = new Instascan.Scanner({ video: video });
 
-    const codeReader = new ZXing.BrowserQRCodeReader();
+    scanner.addListener('scan', (content) => {
+      const qrCodeResult = content;
+      const qrCodeElement = document.createElement('p');
+      qrCodeElement.textContent = qrCodeResult;
+      resultsDiv.appendChild(qrCodeElement);
+    });
 
-    async function startScanning() {
-      try {
-        const devices = await navigator.mediaDevices.enumerateDevices();
-        let backCameraFound = false;
-
-        for (const device of devices) {
-          if (device.kind === 'videoinput' && device.label.toLowerCase().includes('back')) {
-            // Use the first available back camera
-            selectedCamera = device.deviceId;
-            backCameraFound = true;
-            break;
-          }
+    Instascan.Camera.getCameras()
+      .then((cameras) => {
+        if (cameras.length > 0) {
+          // Use the first available camera (you can customize camera selection logic)
+          scanner.start(cameras[0]);
+        } else {
+          console.error('No cameras found.');
         }
-
-        if (!backCameraFound) {
-          console.error('No back camera found.');
-          return;
-        }
-
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { deviceId: selectedCamera } });
-        video.srcObject = stream;
-        await video.play();
-      } catch (error) {
+      })
+      .catch((error) => {
         console.error('Error accessing the camera:', error);
-      }
-
-      codeReader.decodeFromVideoDevice(null, 'video', (result, err) => {
-        if (result) {
-          // Process the detected QR code
-          const qrCodeResult = result.getText();
-          const qrCodeElement = document.createElement('p');
-          qrCodeElement.textContent = qrCodeResult;
-          resultsDiv.appendChild(qrCodeElement);
-
-        alert(qrCodeResult);
-            
-          // Draw a border around the QR code on the video element
-          drawQRCodeBorder(result.location);
-        }
       });
-    }
-
-    function drawQRCodeBorder(location) {
-      const { topLeft, topRight, bottomRight, bottomLeft } = location;
-      const context = canvas.getContext('2d');
-      const lineWidth = 2;
-      const borderColor = 'red';
-
-      // Draw the border on the canvas
-      context.strokeStyle = borderColor;
-      context.lineWidth = lineWidth;
-      context.beginPath();
-      context.moveTo(topLeft.x, topLeft.y);
-      context.lineTo(topRight.x, topRight.y);
-      context.lineTo(bottomRight.x, bottomRight.y);
-      context.lineTo(bottomLeft.x, bottomLeft.y);
-      context.closePath();
-      context.stroke();
-    }
-
-    startScanning();
   </script>
 </body>
 
