@@ -9,36 +9,23 @@
 </head>
 
 <body>
-   <video id="video" autoplay></video>
-  <div id="results"></div>
-
   <script src="/instascan.min.js"></script>
-  <script>
-    const video = document.getElementById('video');
-    const resultsDiv = document.getElementById('results');
-
-    const scanner = new Instascan.Scanner({ video: video });
-
-    scanner.addListener('scan', (content) => {
-      const qrCodeResult = content;
-      const qrCodeElement = document.createElement('p');
-      qrCodeElement.textContent = qrCodeResult;
-      resultsDiv.appendChild(qrCodeElement);
-    });
-
-    Instascan.Camera.getCameras()
-      .then((cameras) => {
+   <video id="preview"></video>
+    <script type="text/javascript">
+      let scanner = new Instascan.Scanner({ video: document.getElementById('preview') });
+      scanner.addListener('scan', function (content) {
+        console.log(content);
+      });
+      Instascan.Camera.getCameras().then(function (cameras) {
         if (cameras.length > 0) {
-          // Use the first available camera (you can customize camera selection logic)
           scanner.start(cameras[0]);
         } else {
           console.error('No cameras found.');
         }
-      })
-      .catch((error) => {
-        console.error('Error accessing the camera:', error);
+      }).catch(function (e) {
+        console.error(e);
       });
-  </script>
+    </script>
 </body>
 
 </html>
