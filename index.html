@@ -61,6 +61,7 @@
           const code = jsQR(imageData.data, imageData.width, imageData.height);
         
           if (code) {
+            alert(code);
             console.log("QR code detected:", code.data);
             // You can handle the detected QR code here
           }
