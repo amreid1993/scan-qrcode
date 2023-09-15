@@ -61,6 +61,7 @@
               setInterval(detectQRCode, 100); // Call detectQRCode every 100ms
             };
           } catch (error) {
+              alert(error);
             console.error("Error accessing the back camera:", error);
           }
         }
