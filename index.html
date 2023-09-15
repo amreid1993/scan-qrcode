@@ -5,26 +5,50 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>   
-  </style>
+
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 </head>
 
 <body>
-  <script src="instascan.min.js"></script>
-   <video id="preview"></video>
-    <script type="text/javascript">
-      let scanner = new Instascan.Scanner({ video: document.getElementById('preview') });
-      scanner.addListener('scan', function (content) {
-        console.log(content);
-      });
-      Instascan.Camera.getCameras().then(function (cameras) {
-        if (cameras.length > 0) {
-          scanner.start(cameras[0]);
-        } else {
-          console.error('No cameras found.');
+    <video id="video" autoplay></video>
+    <canvas id="canvas" style="display: none;"></canvas>
+
+    <script>
+        const videoElement = document.getElementById("video");
+        const canvasElement = document.getElementById("canvas");
+        const canvasContext = canvasElement.getContext("2d");
+        
+        // Function to start the camera and QR code detection
+        async function startCamera() {
+              try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                videoElement.srcObject = stream;
+            
+                // Wait for the video to start and get its dimensions
+                videoElement.onloadedmetadata = () => {
+                  canvasElement.width = videoElement.videoWidth;
+                  canvasElement.height = videoElement.videoHeight;
+                  setInterval(detectQRCode, 100); // Call detectQRCode every 100ms
+                };
+              } catch (error) {
+                console.error("Error accessing the camera:", error);
+              }
         }
-      }).catch(function (e) {
-        console.error(e);
-      });
+        
+        // Function to detect QR codes
+        function detectQRCode() {
+              canvasContext.drawImage(videoElement, 0, 0, canvasElement.width, canvasElement.height);
+              const imageData = canvasContext.getImageData(0, 0, canvasElement.width, canvasElement.height);
+              const code = jsQR(imageData.data, imageData.width, imageData.height);
+            
+              if (code) {
+                console.log("QR code detected:", code.data);
+                // You can handle the detected QR code here
+              }
+        }
+        
+        // Start the camera when the page loads
+        window.onload = startCamera;
     </script>
 </body>
 
