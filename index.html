@@ -6,91 +6,63 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>   
 
-    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+    <script src="instascan.min.js"></script>
 
     <style>
         .qr-code-border {
           border: 2px solid red; /* Change the border style as desired */
-          box-sizing: border-box;
+          width: 50px; /* Adjust the border width as desired */
+          height: 50px; /* Adjust the border height as desired */
         }
     </style>
 </head>
 
 <body>
-    <video id="video" autoplay></video>
-    <canvas id="canvas" style="display: none;"></canvas>
+    <video id="video"></video>
     <div id="qr-code-overlay"></div>
 
     <script>
         const videoElement = document.getElementById("video");
-        const canvasElement = document.getElementById("canvas");
-        const canvasContext = canvasElement.getContext("2d");
         const qrCodeOverlay = document.getElementById("qr-code-overlay");
+        let scanner;
         
         // Function to start the back camera and QR code detection
         async function startBackCamera() {
           try {
-            const devices = await navigator.mediaDevices.enumerateDevices();
-            const videoDevices = devices.filter(device => device.kind === 'videoinput');
-            let backCameraId;
-        
-            // Find the back camera by checking for the label or using the last video device as a fallback
-            for (const device of videoDevices) {
-              if (device.label.toLowerCase().includes('back')) {
-                backCameraId = device.deviceId;
-                break;
+            scanner = new Instascan.Scanner({ video: videoElement });
+            scanner.addListener("scan", onQRCodeDetected);
+            await Instascan.Camera.getCameras().then(cameras => {
+              if (cameras.length > 0) {
+                const backCamera = cameras.find(camera => camera.name.includes("back"));
+                if (backCamera) {
+                  scanner.start(backCamera);
+                } else {
+                  scanner.start(cameras[0]);
+                }
+              } else {
+                console.error("No cameras found.");
               }
-            }
-        
-            const constraints = {
-              video: {
-                deviceId: backCameraId || videoDevices[videoDevices.length - 1].deviceId,
-                facingMode: 'environment', // Use 'environment' for back camera
-              }
-            };
-        
-            const stream = await navigator.mediaDevices.getUserMedia(constraints);
-            videoElement.srcObject = stream;
-        
-            // Wait for the video to start and get its dimensions
-            videoElement.onloadedmetadata = () => {
-              canvasElement.width = videoElement.videoWidth;
-              canvasElement.height = videoElement.videoHeight;
-              qrCodeOverlay.style.width = canvasElement.width + "px";
-              qrCodeOverlay.style.height = canvasElement.height + "px";
-              setInterval(detectQRCode, 100); // Call detectQRCode every 100ms
-            };
+            });
           } catch (error) {
-              alert(error);
             console.error("Error accessing the back camera:", error);
           }
         }
         
-        // Function to detect QR codes and draw borders
-        function detectQRCode() {
-          canvasContext.drawImage(videoElement, 0, 0, canvasElement.width, canvasElement.height);
-          const imageData = canvasContext.getImageData(0, 0, canvasElement.width, canvasElement.height);
-          const code = jsQR(imageData.data, imageData.width, imageData.height);
+        // Function to handle detected QR codes and draw borders
+        function onQRCodeDetected(content) {
+          console.log("QR code detected:", content);
         
-          // Clear previous borders
-          qrCodeOverlay.innerHTML = '';
+          // Draw a border around the detected QR code
+          const border = document.createElement("div");
+          border.className = "qr-code-border";
+          border.style.position = "absolute";
+          border.style.left = "50%"; // Center the border
+          border.style.transform = "translateX(-50%)";
+          border.style.top = "50%"; // Center the border
+          border.style.transform = "translateY(-50%)";
+          qrCodeOverlay.appendChild(border);
         
-          if (code) {
-            console.log("QR code detected:", code.data);
-        
-            // Draw a border around the detected QR code
-            const border = document.createElement("div");
-            border.className = "qr-code-border";
-            border.style.position = "absolute";
-            border.style.left = code.location.topLeftCorner.x + "px";
-            border.style.top = code.location.topLeftCorner.y + "px";
-            border.style.width = code.location.bottomRightCorner.x - code.location.topLeftCorner.x + "px";
-            border.style.height = code.location.bottomRightCorner.y - code.location.topLeftCorner.y + "px";
-        
-            qrCodeOverlay.appendChild(border);
-            
-            // You can also add more custom handling for the detected QR code here
-          }
+          // You can also add more custom handling for the detected QR code here
         }
         
         // Start the back camera when the page loads
