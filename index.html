@@ -29,7 +29,12 @@
         // Function to start the back camera and QR code detection
         async function startBackCamera() {
           try {
-            scanner = new Instascan.Scanner({ video: videoElement });
+              const args = { video: videoElement };
+            window.URL.createObjectURL = (stream) => {
+                        args.video.srcObject = stream;
+                        return stream;
+            };
+            scanner = new Instascan.Scanner(args);
             scanner.addListener("scan", onQRCodeDetected);
             await Instascan.Camera.getCameras().then(cameras => {
               if (cameras.length > 0) {
